@@ -449,6 +449,10 @@
 
   var ACTION_TYPE_LABELS = { borrow: '借款', repay: '还款', safe_deposit: '保险箱存入', safe_withdraw: '保险箱提现', safe_retain: '保险箱保留' };
 
+  function flipSideShort(s) {
+    return s === '正面' ? 'H' : (s === '反面' ? 'T' : (s || ''));
+  }
+
   function renderHistoryTable() {
     if (!historyTableBody) return;
     if (history.length === 0) {
@@ -464,12 +468,12 @@
       if (r.type === 'flip') {
         var pl = r.profitLoss >= 0 ? '+' + r.profitLoss : String(r.profitLoss);
         var plClass = r.profitLoss >= 0 ? 'pl-win' : 'pl-lose';
-        var detail = r.mode + '档 ' + (r.guess || '') + '→' + (r.actual || '');
-        return '<tr><td>' + round + '</td><td>开翻(' + detail + ')</td><td class="' + plClass + '">' + pl + '</td><td>' + bal + '</td><td>' + d + '</td><td>' + safe + '</td><td>' + tot + '</td></tr>';
+        var detail = r.mode + flipSideShort(r.guess) + '→' + flipSideShort(r.actual);
+        return '<tr><td>' + round + '</td><td class="cell-type">开翻(' + detail + ')</td><td class="' + plClass + '">' + pl + '</td><td>' + bal + '</td><td>' + d + '</td><td>' + safe + '</td><td>' + tot + '</td></tr>';
       }
       var typeLabel = ACTION_TYPE_LABELS[r.type] || r.type;
       var amt = r.amount != null ? formatNum(r.amount) : '-';
-      return '<tr><td>' + round + '</td><td>' + typeLabel + '</td><td>' + amt + '</td><td>' + bal + '</td><td>' + d + '</td><td>' + safe + '</td><td>' + tot + '</td></tr>';
+      return '<tr><td>' + round + '</td><td class="cell-type">' + typeLabel + '</td><td>' + amt + '</td><td>' + bal + '</td><td>' + d + '</td><td>' + safe + '</td><td>' + tot + '</td></tr>';
     });
     historyTableBody.innerHTML = rows.join('');
   }
