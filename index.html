@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>猜硬币 · 赌博机</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <div class="page">
+    <div class="game-panel">
+      <main class="game">
+        <h1>猜硬币</h1>
+        <p class="subtitle">选正面或反面，开翻看运气</p>
+
+        <div class="balance-board">
+          <span>本金 <strong id="balance">1000</strong></span>
+          <span class="game-over-label" id="gameOverLabel" aria-live="polite"></span>
+        </div>
+
+        <section class="mode-section" aria-label="游戏模式">
+          <h2 class="mode-title">模式</h2>
+          <div class="mode-row">
+            <button type="button" class="mode-btn" id="modeBasic" aria-pressed="true">基础增长</button>
+            <button type="button" class="mode-btn" id="modeStake" aria-pressed="false">筹码博弈</button>
+          </div>
+          <p class="mode-desc" id="modeDesc">猜对 +20，连续猜对额外 +5；猜错 -20，连续猜错额外 -10</p>
+          <div class="stake-panel" id="stakePanel" hidden>
+            <div class="stake-row">
+              <label for="betAmount">下注金额</label>
+              <input type="number" id="betAmount" class="stake-input" min="1" value="100" aria-label="下注金额">
+            </div>
+            <div class="stake-row">
+              <label for="leverage">杠杆</label>
+              <input type="number" id="leverage" class="stake-input" min="1" step="0.1" value="2" aria-label="杠杆">
+            </div>
+            <div class="leverage-btns">
+              <button type="button" class="leverage-btn" data-x="2">2x</button>
+              <button type="button" class="leverage-btn" data-x="5">5x</button>
+              <button type="button" class="leverage-btn" data-x="10">10x</button>
+            </div>
+            <p class="stake-hint" id="stakeHint">有效额 = ⌈下注×杠杆⌉，须 ≥ 200</p>
+            <button type="button" class="allin-btn" id="allinBtn">All in</button>
+          </div>
+        </section>
+
+        <div class="choice-row">
+          <button type="button" class="choice-btn" data-side="0" aria-pressed="false">正面</button>
+          <button type="button" class="choice-btn" data-side="1" aria-pressed="false">反面</button>
+        </div>
+
+        <div class="coin-wrap">
+          <div class="coin" id="coin" aria-hidden="true">
+            <div class="coin-face coin-heads">正</div>
+            <div class="coin-face coin-tails">反</div>
+          </div>
+        </div>
+
+        <div class="flip-row">
+          <button type="button" class="flip-btn" id="flipBtn" disabled>开翻 1 次</button>
+        </div>
+
+        <div class="result" id="result" aria-live="polite"></div>
+      </main>
+    </div>
+
+    <div class="right-panel">
+      <section class="chart-panel" aria-label="历史数据图">
+        <h2 class="chart-title">正反差 · 资金</h2>
+        <div class="chart-wrap">
+          <canvas id="historyChart" width="340" height="200"></canvas>
+        </div>
+      </section>
+
+      <section class="history-panel" aria-label="游戏历史记录">
+        <div class="history-panel-head">
+          <h2 class="history-list-title">历史记录</h2>
+          <button type="button" class="download-btn" id="downloadHistoryBtn">下载</button>
+        </div>
+        <div class="history-table-wrap">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>轮次</th>
+                <th>模式</th>
+                <th>下注</th>
+                <th>杠杆</th>
+                <th>猜测</th>
+                <th>答案</th>
+                <th>损益</th>
+                <th>本金</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
+  <script src="./script.js" defer></script>
+</body>
+</html>
