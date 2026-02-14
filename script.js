@@ -2,6 +2,7 @@
   const SIDES = ['正面', '反面'];
   const INITIAL_BALANCE = 1000;
   const BASIC_STAKE = 20;
+  const MARGIN = 100;
 
   function randomBit() {
     var buf = new Uint8Array(1);
@@ -50,7 +51,9 @@
     var lev = Number(leverageEl.value) || 1;
     if (bet <= 0 || lev < 1) return false;
     if (bet > balance) return false;
-    return effectiveStake(bet, lev) >= 200;
+    if (balance <= MARGIN) return false;
+    var eff = effectiveStake(bet, lev);
+    return eff >= 200 && eff <= balance - MARGIN;
   }
 
   function updateBalanceDisplay() {
@@ -199,7 +202,7 @@
       modeDescEl.textContent = '猜对 +20，连续猜对额外 +5；猜错 -20，连续猜错额外 -10';
       stakePanelEl.hidden = true;
     } else {
-      modeDescEl.textContent = '下注×杠杆为有效额，猜对得有效额，猜错扣有效额（有效额≥200）';
+      modeDescEl.textContent = '下注×杠杆为有效额，猜对得有效额，猜错扣有效额（有效额≥200，且须预留' + MARGIN + '元保证金）';
       stakePanelEl.hidden = false;
       betAmountEl.max = balance;
       updateStakeHint();
@@ -213,16 +216,28 @@
     var bet = Math.floor(Number(betAmountEl.value) || 0);
     var lev = Number(leverageEl.value) || 1;
     var eff = effectiveStake(bet, lev);
+    var maxEff = balance > MARGIN ? balance - MARGIN : 0;
     if (bet <= 0 || lev < 1) {
-      stakeHintEl.textContent = '有效额 = ⌈下注×杠杆⌉，须 ≥ 200';
+      stakeHintEl.textContent = '有效额 = ⌈下注×杠杆⌉，须 ≥ 200 且 ≤ 本金−' + MARGIN + '（保证金）';
       return;
     }
-    stakeHintEl.textContent = '有效额 = ' + eff + (eff >= 200 ? '（符合）' : '（须 ≥ 200）');
+    var ok = eff >= 200 && eff <= maxEff;
+    if (ok) {
+      stakeHintEl.textContent = '有效额 = ' + eff + '（符合）';
+    } else if (eff < 200) {
+      stakeHintEl.textContent = '有效额 = ' + eff + '（须 ≥ 200）';
+    } else {
+      stakeHintEl.textContent = '有效额 = ' + eff + '（须 ≤ 本金−' + MARGIN + '，预留保证金）';
+    }
   }
 
   function allIn() {
     if (gameOver) return;
-    betAmountEl.value = String(balance);
+    if (balance <= MARGIN) return;
+    var lev = Number(leverageEl.value) || 1;
+    var maxEff = balance - MARGIN;
+    var bet = Math.floor(maxEff / lev);
+    betAmountEl.value = String(Math.max(1, bet));
     betAmountEl.max = balance;
     updateStakeHint();
     updateFlipButtonState();
