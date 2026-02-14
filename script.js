@@ -2,6 +2,7 @@
   const SIDES = ['正面', '反面'];
   const INITIAL_BALANCE = 1000;
   const BASIC_STAKE = 20;
+  const INTEREST_RATE = 0.003;
   const MARGIN = 100;
 
   function randomBit() {
@@ -17,7 +18,13 @@
   const flipBtn = document.getElementById('flipBtn');
   const resultEl = document.getElementById('result');
   const balanceEl = document.getElementById('balance');
+  const debtEl = document.getElementById('debt');
+  const totalAssetsEl = document.getElementById('totalAssets');
   const gameOverLabelEl = document.getElementById('gameOverLabel');
+  const borrowInputEl = document.getElementById('borrowAmount');
+  const borrowBtn = document.getElementById('borrowBtn');
+  const repayInputEl = document.getElementById('repayAmount');
+  const repayBtn = document.getElementById('repayBtn');
   const modeBasicBtn = document.getElementById('modeBasic');
   const modeStakeBtn = document.getElementById('modeStake');
   const modeDescEl = document.getElementById('modeDesc');
@@ -31,6 +38,8 @@
   const choiceBtns = document.querySelectorAll('.choice-btn');
 
   let balance = INITIAL_BALANCE;
+  let debt = 0;
+  let consecutiveNegativeRounds = 0;
   let mode = 'basic';
   let gameOver = false;
   let chosenSide = null;
@@ -43,11 +52,15 @@
   var chartCtx = chartCanvas ? chartCanvas.getContext('2d') : null;
 
   function effectiveStake(bet, lev) {
-    return Math.ceil(Number(bet) * Number(lev));
+    return Number(bet) * Number(lev);
+  }
+
+  function totalAssets() {
+    return balance - debt;
   }
 
   function canFlipStake() {
-    var bet = Math.floor(Number(betAmountEl.value) || 0);
+    var bet = Number(betAmountEl.value) || 0;
     var lev = Number(leverageEl.value) || 1;
     if (bet <= 0 || lev < 1) return false;
     if (bet > balance) return false;
@@ -57,19 +70,26 @@
   }
 
   function updateBalanceDisplay() {
-    balanceEl.textContent = balance;
+    var total = totalAssets();
+    balanceEl.textContent = formatNum(balance);
+    if (debtEl) debtEl.textContent = formatNum(debt);
+    if (totalAssetsEl) totalAssetsEl.textContent = formatNum(total);
     if (gameOver) {
       gameOverLabelEl.textContent = '清算';
     } else {
       gameOverLabelEl.textContent = '';
       if (mode === 'stake') {
         betAmountEl.max = balance;
-        var bet = parseInt(betAmountEl.value, 10);
+        var bet = Number(betAmountEl.value);
         if (!isNaN(bet) && bet > balance) betAmountEl.value = balance;
         updateStakeHint();
         updateFlipButtonState();
       }
     }
+  }
+
+  function formatNum(x) {
+    return Number(x).toFixed(2);
   }
 
   function setGameOver() {
@@ -80,6 +100,10 @@
     modeStakeBtn.disabled = true;
     betAmountEl.disabled = true;
     leverageEl.disabled = true;
+    if (borrowInputEl) borrowInputEl.disabled = true;
+    if (borrowBtn) borrowBtn.disabled = true;
+    if (repayInputEl) repayInputEl.disabled = true;
+    if (repayBtn) repayBtn.disabled = true;
     choiceBtns.forEach(function (btn) { btn.disabled = true; });
     updateBalanceDisplay();
   }
@@ -104,7 +128,7 @@
     updateFlipButtonState();
   }
 
-  function pushHistory(round, modeLabel, betAmount, leverage, guess, actual, profitLoss, balanceAfter) {
+  function pushHistory(round, modeLabel, betAmount, leverage, guess, actual, profitLoss, balanceAfter, debtAfter) {
     history.push({
       round: round,
       mode: modeLabel,
@@ -113,7 +137,8 @@
       guess: guess,
       actual: actual,
       profitLoss: profitLoss,
-      balanceAfter: balanceAfter
+      balanceAfter: balanceAfter,
+      debtAfter: debtAfter
     });
   }
 
@@ -140,7 +165,7 @@
       }
       modeLabel = '基础';
     } else {
-      betAmountNum = Math.floor(Number(betAmountEl.value) || 0);
+      betAmountNum = Number(betAmountEl.value) || 0;
       leverageNum = Number(leverageEl.value) || 1;
       var effective = effectiveStake(betAmountNum, leverageNum);
       profitLoss = won ? effective : -effective;
@@ -150,6 +175,8 @@
     balance += profitLoss;
     if (balance < 0) balance = 0;
 
+    debt = debt * (1 + INTEREST_RATE);
+
     pushHistory(
       round,
       modeLabel,
@@ -158,7 +185,8 @@
       SIDES[chosenSide],
       SIDES[outcome],
       profitLoss,
-      balance
+      balance,
+      debt
     );
 
     var prev = historyDiff.length ? historyDiff[historyDiff.length - 1] : 0;
@@ -169,10 +197,10 @@
 
     if (showResultText) {
       if (won) {
-        resultEl.textContent = '中了！是' + SIDES[outcome] + '。+' + (profitLoss > 0 ? profitLoss : -profitLoss);
+        resultEl.textContent = '中了！是' + SIDES[outcome] + '。+' + formatNum(profitLoss > 0 ? profitLoss : -profitLoss);
         resultEl.className = 'result win';
       } else {
-        resultEl.textContent = '没中，是' + SIDES[outcome] + '。' + profitLoss;
+        resultEl.textContent = '没中，是' + SIDES[outcome] + '。' + formatNum(profitLoss);
         resultEl.className = 'result lose';
       }
     }
@@ -182,8 +210,13 @@
     drawHistoryChart();
     renderHistoryTable();
 
-    if (balance <= 0) {
-      setGameOver();
+    if (totalAssets() <= 0) {
+      consecutiveNegativeRounds += 1;
+      if (consecutiveNegativeRounds >= 3) {
+        setGameOver();
+      }
+    } else {
+      consecutiveNegativeRounds = 0;
     }
   }
 
@@ -202,7 +235,7 @@
       modeDescEl.textContent = '猜对 +20，连续猜对额外 +5；猜错 -20，连续猜错额外 -10';
       stakePanelEl.hidden = true;
     } else {
-      modeDescEl.textContent = '下注×杠杆为有效额，猜对得有效额，猜错扣有效额（有效额≥200，且须预留' + MARGIN + '元保证金）';
+      modeDescEl.textContent = '下注×杠杆为有效额（小数），猜对得有效额，猜错扣有效额（有效额≥200，须预留' + MARGIN + '元保证金）';
       stakePanelEl.hidden = false;
       betAmountEl.max = balance;
       updateStakeHint();
@@ -213,21 +246,21 @@
   }
 
   function updateStakeHint() {
-    var bet = Math.floor(Number(betAmountEl.value) || 0);
+    var bet = Number(betAmountEl.value) || 0;
     var lev = Number(leverageEl.value) || 1;
     var eff = effectiveStake(bet, lev);
     var maxEff = balance > MARGIN ? balance - MARGIN : 0;
     if (bet <= 0 || lev < 1) {
-      stakeHintEl.textContent = '有效额 = ⌈下注×杠杆⌉，须 ≥ 200 且 ≤ 本金−' + MARGIN + '（保证金）';
+      stakeHintEl.textContent = '有效额 = 下注×杠杆（小数），须 ≥ 200 且 ≤ 本金−' + MARGIN + '（保证金）';
       return;
     }
     var ok = eff >= 200 && eff <= maxEff;
     if (ok) {
-      stakeHintEl.textContent = '有效额 = ' + eff + '（符合）';
+      stakeHintEl.textContent = '有效额 = ' + formatNum(eff) + '（符合）';
     } else if (eff < 200) {
-      stakeHintEl.textContent = '有效额 = ' + eff + '（须 ≥ 200）';
+      stakeHintEl.textContent = '有效额 = ' + formatNum(eff) + '（须 ≥ 200）';
     } else {
-      stakeHintEl.textContent = '有效额 = ' + eff + '（须 ≤ 本金−' + MARGIN + '，预留保证金）';
+      stakeHintEl.textContent = '有效额 = ' + formatNum(eff) + '（须 ≤ 本金−' + MARGIN + '，预留保证金）';
     }
   }
 
@@ -236,19 +269,47 @@
     if (balance <= MARGIN) return;
     var lev = Number(leverageEl.value) || 1;
     var maxEff = balance - MARGIN;
-    var bet = Math.floor(maxEff / lev);
-    betAmountEl.value = String(Math.max(1, bet));
+    var bet = maxEff / lev;
+    betAmountEl.value = String(Math.max(0.01, Math.round(bet * 100) / 100));
     betAmountEl.max = balance;
     updateStakeHint();
     updateFlipButtonState();
   }
 
+  function doBorrow() {
+    if (gameOver || !borrowInputEl) return;
+    var amount = Number(borrowInputEl.value) || 0;
+    if (amount <= 0) return;
+    balance += amount;
+    debt += amount;
+    borrowInputEl.value = '';
+    updateBalanceDisplay();
+    updateFlipButtonState();
+    if (mode === 'stake') updateStakeHint();
+  }
+
+  function doRepay() {
+    if (gameOver || !repayInputEl) return;
+    var amount = Number(repayInputEl.value) || 0;
+    if (amount <= 0) return;
+    amount = Math.min(amount, balance, debt);
+    if (amount <= 0) return;
+    balance -= amount;
+    debt -= amount;
+    repayInputEl.value = '';
+    updateBalanceDisplay();
+    updateFlipButtonState();
+    if (mode === 'stake') updateStakeHint();
+  }
+
   function exportHistory() {
-    var header = '轮次,模式,下注金额,杠杆,猜测结果,正确答案,损益,剩余本金';
+    var header = '轮次,模式,下注金额,杠杆,猜测结果,正确答案,损益,本金,负债,总资产';
     var rows = history.map(function (r) {
-      var pl = r.profitLoss >= 0 ? '+' + r.profitLoss : String(r.profitLoss);
+      var pl = r.profitLoss >= 0 ? '+' + formatNum(r.profitLoss) : formatNum(r.profitLoss);
       var lev = Number(r.leverage) === Math.floor(r.leverage) ? r.leverage + '.0' : String(r.leverage);
-      return [r.round, r.mode, r.betAmount, lev, r.guess, r.actual, pl, r.balanceAfter].join(',');
+      var d = r.debtAfter != null ? r.debtAfter : 0;
+      var tot = r.balanceAfter - d;
+      return [r.round, r.mode, formatNum(r.betAmount), lev, r.guess, r.actual, pl, formatNum(r.balanceAfter), formatNum(d), formatNum(tot)].join(',');
     });
     var csv = '\uFEFF' + header + '\n' + rows.join('\n');
     var blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
@@ -276,7 +337,8 @@
       var pl = r.profitLoss >= 0 ? '+' + r.profitLoss : String(r.profitLoss);
       var lev = Number(r.leverage) === Math.floor(r.leverage) ? r.leverage + '.0' : String(r.leverage);
       var plClass = r.profitLoss >= 0 ? 'pl-win' : 'pl-lose';
-      return '<tr><td>' + r.round + '</td><td>' + r.mode + '</td><td>' + r.betAmount + '</td><td>' + lev + '</td><td>' + r.guess + '</td><td>' + r.actual + '</td><td class="' + plClass + '">' + pl + '</td><td>' + r.balanceAfter + '</td></tr>';
+      var tot = r.debtAfter != null ? (r.balanceAfter - r.debtAfter) : r.balanceAfter;
+      return '<tr><td>' + r.round + '</td><td>' + r.mode + '</td><td>' + r.betAmount + '</td><td>' + lev + '</td><td>' + r.guess + '</td><td>' + r.actual + '</td><td class="' + plClass + '">' + pl + '</td><td>' + formatNum(tot) + '</td></tr>';
     });
     historyTableBody.innerHTML = rows.join('');
   }
@@ -303,7 +365,9 @@
       return;
     }
 
-    var balanceData = [INITIAL_BALANCE].concat(history.map(function (r) { return r.balanceAfter; }));
+    var balanceData = [INITIAL_BALANCE].concat(history.map(function (r) {
+      return r.debtAfter != null ? (r.balanceAfter - r.debtAfter) : r.balanceAfter;
+    }));
     var diffMin = Math.min(0, Math.min.apply(null, diffData));
     var diffMax = Math.max(0, Math.max.apply(null, diffData));
     if (diffMin === diffMax) { diffMin -= 1; diffMax += 1; }
@@ -401,6 +465,8 @@
     });
   });
   allinBtn.addEventListener('click', allIn);
+  if (borrowBtn) borrowBtn.addEventListener('click', doBorrow);
+  if (repayBtn) repayBtn.addEventListener('click', doRepay);
   if (downloadHistoryBtn) downloadHistoryBtn.addEventListener('click', exportHistory);
 
   choiceBtns.forEach(function (btn) {

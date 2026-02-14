@@ -14,8 +14,16 @@
         <p class="subtitle">选正面或反面，开翻看运气</p>
 
         <div class="balance-board">
-          <span>本金 <strong id="balance">1000</strong></span>
+          <span>本金 <strong id="balance">1000.00</strong></span>
+          <span>负债 <strong id="debt">0.00</strong></span>
+          <span>总资产 <strong id="totalAssets">1000.00</strong></span>
           <span class="game-over-label" id="gameOverLabel" aria-live="polite"></span>
+        </div>
+        <div class="bank-row">
+          <input type="number" id="borrowAmount" class="stake-input" min="0.01" step="1" value="" placeholder="借款金额" aria-label="借款金额">
+          <button type="button" class="allin-btn" id="borrowBtn">借款</button>
+          <input type="number" id="repayAmount" class="stake-input" min="0.01" step="1" value="" placeholder="还款金额" aria-label="还款金额">
+          <button type="button" class="allin-btn repay-btn" id="repayBtn">还款</button>
         </div>
 
         <section class="mode-section" aria-label="游戏模式">
@@ -39,7 +47,7 @@
               <button type="button" class="leverage-btn" data-x="5">5x</button>
               <button type="button" class="leverage-btn" data-x="10">10x</button>
             </div>
-            <p class="stake-hint" id="stakeHint">有效额 = ⌈下注×杠杆⌉，须 ≥ 200 且 ≤ 本金−100（保证金）</p>
+            <p class="stake-hint" id="stakeHint">有效额 = 下注×杠杆（小数），须 ≥ 200 且 ≤ 本金−100（保证金）</p>
             <button type="button" class="allin-btn" id="allinBtn">All in</button>
           </div>
         </section>
@@ -88,12 +96,24 @@
                 <th>猜测</th>
                 <th>答案</th>
                 <th>损益</th>
-                <th>本金</th>
+                <th>总资产</th>
               </tr>
             </thead>
             <tbody id="historyTableBody"></tbody>
           </table>
         </div>
+      </section>
+
+      <section class="help-panel" aria-label="游戏说明">
+        <details class="help-details">
+          <summary class="help-summary">游戏说明</summary>
+          <div class="help-content">
+            <p><strong>目标</strong>：初始本金 1000，猜硬币正反面。总资产 = 本金 − 负债。连续三轮总资产为负即破产。</p>
+            <p><strong>基础模式</strong>：猜对 +20，连续猜对再 +5；猜错 −20，连续猜错再 −10。</p>
+            <p><strong>博弈模式</strong>：有效额 = 下注×杠杆（小数），须 ≥ 200 且 ≤ 本金−100（预留保证金）。猜对 +有效额，猜错 −有效额。可 2x/5x/10x 或 All in。</p>
+            <p><strong>银行</strong>：借款增加本金与负债；还款用现金减负债。每局结束后负债 ×1.003（利率 0.3%）。</p>
+          </div>
+        </details>
       </section>
     </div>
   </div>

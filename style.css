@@ -139,6 +139,55 @@ body {
   color: #e07c7c;
 }
 
+.help-panel {
+  margin-top: 0.75rem;
+}
+
+.help-details {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.help-summary {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.help-summary::-webkit-details-marker {
+  display: none;
+}
+
+.help-summary::before {
+  content: "▶ ";
+  font-size: 0.7em;
+  opacity: 0.8;
+}
+
+.help-details[open] .help-summary::before {
+  content: "▼ ";
+}
+
+.help-content {
+  padding: 0.5rem 0.75rem 0.75rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  opacity: 0.95;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.help-content p {
+  margin: 0.35em 0;
+}
+
+.help-content p:first-child {
+  margin-top: 0;
+}
+
 @media (max-width: 720px) {
   .page {
     grid-template-columns: 1fr;
@@ -179,6 +228,28 @@ h1 {
 .game-over-label {
   color: #e07c7c;
   font-weight: 600;
+}
+
+.bank-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.bank-row .stake-input {
+  width: 5.5rem;
+}
+
+.bank-row .repay-btn {
+  border-color: #7ec87e;
+  background: rgba(126, 200, 126, 0.2);
+  color: #7ec87e;
+}
+
+.bank-row .repay-btn:hover:not(:disabled) {
+  background: rgba(126, 200, 126, 0.35);
 }
 
 .mode-section {
