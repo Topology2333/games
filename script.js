@@ -5,7 +5,7 @@
   const GROWTH_PRESETS = {
     '20': { base: 20, winBonus: 5, loseBase: 20, losePenalty: 10 },
     '50': { base: 50, winBonus: 10, loseBase: 50, losePenalty: 10 },
-    '100': { base: 100, winBonus: 20, loseBase: 100, losePenalty: 15 }
+    '100': { base: 100, winBonus: 0, loseBase: 100, losePenalty: 20 }
   };
   const SAFE_INTEREST_RATE = 0.0035;
   const SAFE_BONUS_RATE = 0.004;
