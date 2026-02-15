@@ -14,6 +14,7 @@
   const LOAN_MAX_RATIO_BASE = 0.2;
   const LOAN_ABILITY_FACTOR = 0.3;
   const ABILITY_ROUNDS_THRESHOLD = 50;
+  const PRESET_20_MAX_CASHFLOW = 100;
 
   function randomBit() {
     var buf = new Uint8Array(1);
@@ -114,6 +115,7 @@
     }
     updateSafeUI();
     updateLoanAndAbilityUI();
+    updatePresetButtonState();
   }
 
   function formatNum(x) {
@@ -136,7 +138,16 @@
     if (safeRetainBtn) safeRetainBtn.disabled = true;
     choiceBtns.forEach(function (btn) { btn.disabled = true; });
     updateBalanceDisplay();
+    updatePresetButtonState();
     updateFlipButtonState();
+  }
+
+  function canUsePreset20() {
+    return totalAssets() < PRESET_20_MAX_CASHFLOW;
+  }
+
+  function updatePresetButtonState() {
+    if (preset20Btn) preset20Btn.disabled = gameOver || !canUsePreset20();
   }
 
   function updateFlipButtonState() {
@@ -144,6 +155,9 @@
     if (gameOver) {
       flipBtn.disabled = true;
       reason = '已清算';
+    } else if (growthPreset === '20' && !canUsePreset20()) {
+      flipBtn.disabled = true;
+      reason = '现金流≥' + PRESET_20_MAX_CASHFLOW + '时不可使用20档';
     } else {
       var maxLoss = maxLossForPreset();
       flipBtn.disabled = chosenSide === null || balance < maxLoss;
@@ -273,6 +287,7 @@
 
   function setPreset(p) {
     if (gameOver) return;
+    if (p === '20' && !canUsePreset20()) return;
     growthPreset = p;
     if (preset20Btn) preset20Btn.setAttribute('aria-pressed', p === '20' ? 'true' : 'false');
     if (preset50Btn) preset50Btn.setAttribute('aria-pressed', p === '50' ? 'true' : 'false');
@@ -597,7 +612,8 @@
   flipBtn.addEventListener('click', runFlip);
 
   updateBalanceDisplay();
-  setPreset('20');
+  if (canUsePreset20()) setPreset('20'); else setPreset('50');
+  updatePresetButtonState();
   updateSafeUI();
   drawHistoryChart();
   renderHistoryTable();
